@@ -1,0 +1,14 @@
+name: scripts
+description: Run commands upon installing Dart packages, and more.
+author: Tobe O <thosakwe@gmail.com>
+version: 1.0.0-dev
+homepage: https://github.com/thosakwe/dart_scripts
+dependencies:
+  angel_cli: ^1.0.0-dev
+  args: ^0.13.7
+  console: ^2.2.4
+  yaml: ^2.1.12
+dev_dependencies:
+  test: ^0.12.15
+executables:
+  scripts:
