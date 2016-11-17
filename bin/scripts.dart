@@ -9,18 +9,19 @@ main(List<String> args) async {
   runner.addCommand(new LinkCommand());
 
   try {
-    runner.run(args);
+    await runner.run(args);
   } catch (exc) {
-    for (final arg in args) {
-      await runScript(arg);
+    if (exc is UsageException) {
+      for (final arg in args) {
+        await runScript(arg);
+      }
+    } else {
+      stderr.writeln(exc.message);
+      exitCode = 1;
     }
   }
 }
 
-loadScriptsFromPubspec() {
-  
-}
+loadScriptsFromPubspec() {}
 
-runScript(String script) {
-
-}
+runScript(String script) {}
