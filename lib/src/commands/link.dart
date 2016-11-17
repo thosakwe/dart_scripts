@@ -11,7 +11,7 @@ class LinkCommand extends Command {
 
   createBashFile(Directory bin, String name, String scriptFile) async {
     final file = new File.fromUri(bin.uri.resolve('$name'));
-    await file.writeAsString('#!/usr/bin/env/bash' + new String.fromCharCode(13) + '"$scriptFile" @*', encoding: ASCII);
+    await file.writeAsString('#!/usr/bin/env bash\n"$scriptFile" @*', encoding: ASCII);
     await Process.run('chmod', ['-R', '+x', bin.path]);
   }
 
