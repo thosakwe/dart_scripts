@@ -3,6 +3,7 @@ import 'package:args/command_runner.dart';
 import '../home.dart';
 import 'load_publock.dart';
 
+final RegExp _file = new RegExp(r'^file://');
 final String dartPath = Platform.executable;
 
 class LinkCommand extends Command {
@@ -11,32 +12,34 @@ class LinkCommand extends Command {
 
   createBashFile(Directory bin, String name, String scriptFile) async {
     final file = new File.fromUri(bin.uri.resolve('$name'));
-    await file.writeAsString('#!/usr/bin/env bash\n"$scriptFile" @*');
+    await file.writeAsString('#!/usr/bin/env bash\n"$dartPath" "$scriptFile" @*');
     await Process.run('chmod', ['+x', file.path]);
   }
 
   createBatFile(Directory bin, String name, String scriptFile) async {
     final file = new File.fromUri(bin.uri.resolve('$name.bat'));
-    await file.writeAsString('@echo off\n"$scriptFile" %*');
+    await file.writeAsString('@echo off\n"$dartPath" "$scriptFile" %*');
   }
 
   run() async {
     final lock = await loadPublock();
-    final Directory bin = new Directory.fromUri(
-        Directory.current.uri.resolve('./.scripts-bin'));
-    final packageRoot = new Directory.fromUri(bin.uri.resolve('./package-root'));
+    final Directory bin =
+        new Directory.fromUri(Directory.current.uri.resolve('./.scripts-bin'));
+    final packageRoot =
+        new Directory.fromUri(bin.uri.resolve('./package-root'));
 
     if (!await packageRoot.exists()) await packageRoot.create(recursive: true);
 
     for (final pkg in lock.packages) {
       // Create symlink
       final pubspec = await pkg.readPubspec();
-      final link = new Link.fromUri(packageRoot.uri.resolve('./${pubspec['name']}'));
+      final link =
+          new Link.fromUri(packageRoot.uri.resolve('./${pubspec['name']}'));
 
-      if (await link.exists())
-        await link.delete();
+      if (await link.exists()) await link.delete();
 
-      await link.create(pkg.location.uri.resolve('./lib').toString());
+      final uri = pkg.location.absolute.uri.resolve('./lib').toString().replaceAll(_file, '');
+      await link.create(uri);
     }
 
     for (final pkg in lock.packages) {
@@ -54,7 +57,11 @@ class LinkCommand extends Command {
           // Generate snapshot
           final snapshot =
               new File.fromUri(pkg.location.uri.resolve('$name.snapshot.dart'));
-          final result = await Process.run(Platform.executable, ['--snapshot=${snapshot.path}', '--package-root=${packageRoot.path}', path]);
+          final result = await Process.run(Platform.executable, [
+            '--snapshot=${snapshot.path}',
+            '--package-root=${packageRoot.path}',
+            path
+          ]);
 
           if (result.stderr.isNotEmpty) {
             stderr.writeln(result.stderr);

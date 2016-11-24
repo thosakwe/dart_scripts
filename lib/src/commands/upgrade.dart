@@ -4,14 +4,14 @@ import 'link.dart';
 import '../run.dart';
 import 'load_publock.dart';
 
-class GetCommand extends Command {
-  String get name => 'get';
+class UpgradeCommand extends Command {
+  String get name => 'upgrade';
   String get description =>
-      'Runs pub get, and then runs scripts of any dependencies.';
+      'Runs pub upgrade, and then runs scripts of any dependencies.';
   final LinkCommand _link = new LinkCommand();
 
   run() async {
-    final args = ['get'];
+    final args = ['upgrade'];
 
     if (argResults != null) args.addAll(argResults.rest);
 
@@ -25,12 +25,12 @@ class GetCommand extends Command {
       final pubspec = await package.readPubspec();
 
       if (pubspec.containsKey('scripts') &&
-          pubspec['scripts'].containsKey('get')) {
+          pubspec['scripts'].containsKey('upgrade')) {
         print('Running get hook from package "${package.name}"...');
-        await runScript(pubspec, 'get', workingDir: package.location);
+        await runScript(pubspec, 'upgrade', workingDir: package.location);
       }
     }
 
-    await runScript(await loadPubspec(), 'get', allowFail: true);
+    await runScript(await loadPubspec(), 'upgrade', allowFail: true);
   }
 }
