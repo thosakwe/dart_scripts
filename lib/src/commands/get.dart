@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
+import 'package:pubspec/pubspec.dart';
 import 'link.dart';
 import '../run.dart';
 import 'load_publock.dart';
@@ -31,6 +32,6 @@ class GetCommand extends Command {
       }
     }
 
-    await runScript(await loadPubspec(), 'get', allowFail: true);
+    await runScript(await PubSpec.load(Directory.current), 'get', allowFail: true);
   }
 }
