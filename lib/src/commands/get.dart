@@ -24,9 +24,10 @@ class GetCommand extends Command {
 
     for (final package in publock.packages) {
       final pubspec = await package.readPubspec();
+      var unparsed = pubspec.unParsedYaml;
 
-      if (pubspec.containsKey('scripts') &&
-          pubspec['scripts'].containsKey('get')) {
+      if (unparsed.containsKey('scripts') &&
+          unparsed['scripts'].containsKey('get')) {
         print('Running get hook from package "${package.name}"...');
         await runScript(pubspec, 'get', workingDir: package.location);
       }

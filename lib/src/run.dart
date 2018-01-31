@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:pubspec/pubspec.dart';
 
-runScript(Map pubspec, String script,
+runScript(PubSpec pubspec, String script,
     {bool allowFail: false, Directory workingDir}) async {
-  final scripts = pubspec['scripts'] ?? {};
+  final scripts = pubspec.unParsedYaml['scripts'] ?? {};
 
   if (!scripts.containsKey(script)) {
     if (allowFail)
       return;
     else
       throw new Exception(
-          'Could not find a script named "$script" in project "${pubspec['name'] ?? '<untitled>'}".');
+          'Could not find a script named "$script" in project "${pubspec.name ?? '<untitled>'}".');
   } else {
     final lines = scripts[script] is List ? scripts[script] : [scripts[script]];
 
