@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
-import '../home.dart';
 import 'load_publock.dart';
 
 final RegExp _file = new RegExp(r'^file://');
@@ -34,7 +33,7 @@ class LinkCommand extends Command {
       // Create symlink
       final pubspec = await pkg.readPubspec();
       final link =
-          new Link.fromUri(packageRoot.uri.resolve('./${pubspec['name']}'));
+          new Link.fromUri(packageRoot.uri.resolve('./${pubspec.name}'));
 
       if (await link.exists()) await link.delete();
 
@@ -44,7 +43,7 @@ class LinkCommand extends Command {
 
     for (final pkg in lock.packages) {
       final pubspec = await pkg.readPubspec();
-      final Map executables = pubspec['executables'];
+      final Map executables = pubspec.unParsedYaml['executables'];
 
       if (executables != null) {
         for (final name in executables.keys) {

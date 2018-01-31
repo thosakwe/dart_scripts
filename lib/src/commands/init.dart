@@ -59,8 +59,8 @@ class InitCommand extends Command {
     final result = await readInput('Is this ok? (yes) ');
 
     if (result.toLowerCase().startsWith('y') || result.trim().isEmpty) {
-      var pubspec = new PubSpec.fromJson(pubspec);
-      await pubspec.save(Directory.current);
+      var ps = new PubSpec.fromJson(pubspec);
+      await ps.save(Directory.current);
     }
 
     await Process.run('pub', ['get']);
