@@ -4,12 +4,15 @@ import 'package:args/command_runner.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:yamlicious/yamlicious.dart';
 import 'get.dart';
 import 'load_publock.dart';
 
 final RegExp _gitPkg = new RegExp(r'^([^@]+)@git://([^#]+)(#(.+))?$');
 final RegExp _pathPkg = new RegExp(r'^([^@]+)@path:([^$]+)$');
+
+const String pubApiRoot = 'https://pub.dartlang.org';
 
 class InstallCommand extends Command {
   final http.Client _client = new http.Client();
@@ -61,7 +64,7 @@ class InstallCommand extends Command {
           final match = _pathPkg.firstMatch(pkg);
           pubspec[key][match.group(1)] = {'path': match.group(2)};
         } else {
-          final dep = await resolvePubDep(pkg);
+          final dep = await resolvePubDep(pkg, pubApiRoot);
           pubspec[key][dep['name']] = dep['version'];
         }
       }
@@ -89,7 +92,8 @@ class InstallCommand extends Command {
     }
   }
 
-  resolvePubDep(String pkg) async {
+  /// Install [pkg] from [apiRoot].
+  resolvePubDep(String pkg, String apiRoot) async {
     final index = pkg.indexOf('@');
 
     if (index > 0 && index < pkg.length - 1) {
@@ -99,7 +103,7 @@ class InstallCommand extends Command {
     } else {
       // Try to auto-detect version...
       final response =
-          await _client.get('https://pub.dartlang.org/packages/$pkg');
+          await _client.get(p.join(apiRoot, 'packages', pkg));
 
       if (response.statusCode == HttpStatus.NOT_FOUND) {
         throw new Exception('Unable to resolve package within pub: "$pkg"');
