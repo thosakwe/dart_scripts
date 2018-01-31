@@ -1,8 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:args/command_runner.dart';
-import 'package:scripts/src/commands/load_publock.dart';
+import 'package:pubspec/pubspec.dart';
 import 'package:scripts/scripts.dart';
 
 main(List<String> args) async {
@@ -20,7 +18,7 @@ main(List<String> args) async {
     await runner.run(args);
   } catch (exc) {
     if (exc is UsageException) {
-      final pubspec = await loadPubspec();
+      final pubspec = await PubSpec.load(Directory.current);
 
       for (final arg in args) {
         try {
