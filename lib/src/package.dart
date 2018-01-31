@@ -1,13 +1,26 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:yaml/yaml.dart';
-import 'home.dart';
+import 'package:path/path.dart' as p;
+import 'package:pubspec/pubspec.dart';
 
 class PubPackage {
+  static String _pubCachePath;
   final PackageDescription description;
   final String name, source, version;
 
   PubPackage({this.name, this.description, this.source, this.version});
+
+  static String get pubCachePath {
+    if (_pubCachePath != null) return _pubCachePath;
+
+    if (Platform.isWindows) {
+      var appdata = Platform.environment['APPDATA'];
+      return _pubCachePath = p.join(appdata, 'Pub', 'Cache');
+    }
+
+    var homeDir = Platform.environment['HOME'];
+    return _pubCachePath = p.join(homeDir, '.pub-cache');
+  }
 
   factory PubPackage.fromMap(Map data) {
     return new PubPackage(
@@ -19,15 +32,15 @@ class PubPackage {
 
   Directory get location {
     if (source == 'hosted') {
-      return new Directory.fromUri(homeDir.uri
-          .resolve('./.pub-cache/hosted/pub.dartlang.org/$name-$version'));
+      return new Directory(
+          p.join(pubCachePath, 'hosted', 'pub.dartlang.org', '$name-$version'));
     } else
-      return null;
+      throw new UnsupportedError(
+          'Unsupported source for package $name in pubspec.lock: $source');
   }
 
-  Future<Map> readPubspec() async {
-    final pubspec = new File.fromUri(location.uri.resolve('./pubspec.yaml'));
-    return loadYaml(await pubspec.readAsString());
+  Future<PubSpec> readPubspec() {
+    return PubSpec.load(location);
   }
 
   Map toJson() {
