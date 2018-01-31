@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
+import 'package:pubspec/pubspec.dart';
 import 'link.dart';
 import '../run.dart';
 import 'load_publock.dart';
 
 class UpgradeCommand extends Command {
   String get name => 'upgrade';
+
   String get description =>
       'Runs pub upgrade, and then runs scripts of any dependencies.';
   final LinkCommand _link = new LinkCommand();
@@ -23,14 +25,16 @@ class UpgradeCommand extends Command {
 
     for (final package in publock.packages) {
       final pubspec = await package.readPubspec();
+      var unparsed = pubspec.unParsedYaml;
 
-      if (pubspec.containsKey('scripts') &&
-          pubspec['scripts'].containsKey('upgrade')) {
+      if (unparsed.containsKey('scripts') &&
+          unparsed['scripts'].containsKey('upgrade')) {
         print('Running get hook from package "${package.name}"...');
         await runScript(pubspec, 'upgrade', workingDir: package.location);
       }
     }
 
-    await runScript(await loadPubspec(), 'upgrade', allowFail: true);
+    await runScript(await PubSpec.load(Directory.current), 'upgrade',
+        allowFail: true);
   }
 }
