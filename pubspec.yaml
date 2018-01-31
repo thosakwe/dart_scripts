@@ -12,6 +12,7 @@ dependencies:
   id: ^1.0.15
   path: ^1.0.0
   pubspec: ^0.0.15
+  tuple: ^1.0.0
   yaml: ^2.1.12
   yamlicious: ^0.0.5
 dev_dependencies:

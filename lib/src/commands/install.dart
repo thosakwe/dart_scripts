@@ -1,13 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:args/command_runner.dart';
-import 'package:html/parser.dart' show parse;
-import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pubspec/pubspec.dart';
+import 'package:pub_semver/pub_semver.dart';
+import 'package:tuple/tuple.dart';
 import 'package:yamlicious/yamlicious.dart';
 import 'get.dart';
-import 'load_publock.dart';
 
 final RegExp _gitPkg = new RegExp(r'^([^@]+)@git://([^#]+)(#(.+))?$');
 final RegExp _pathPkg = new RegExp(r'^([^@]+)@path:([^$]+)$');
@@ -50,28 +51,28 @@ class InstallCommand extends Command {
       var targetMap = <String, DependencyReference>{};
 
       for (final pkg in argResults.rest) {
-        // Todo: Hosted packages
-
         if (_gitPkg.hasMatch(pkg)) {
           final match = _gitPkg.firstMatch(pkg);
           final dep = await resolveGitDep(match);
           targetMap[match.group(1)] = dep;
         } else if (_pathPkg.hasMatch(pkg)) {
           final match = _pathPkg.firstMatch(pkg);
-          targetMap[match.group(1)] = {'path': match.group(2)};
+          targetMap[match.group(1)] = new PathReference(match.group(2));
         } else {
           final dep = await resolvePubDep(pkg, pubApiRoot);
-          targetMap[dep['name']] = dep['version'];
+          targetMap[dep.item1] = dep.item2;
         }
       }
 
       _client.close();
 
       if (!argResults['dev']) {
-        var dependencies = new Map.from(pubspec.dependencies)..addAll(targetMap);
+        var dependencies = new Map.from(pubspec.dependencies)
+          ..addAll(targetMap);
         pubspec = pubspec.copy(dependencies: dependencies);
       } else {
-        var devDependencies = new Map.from(pubspec.devDependencies)..addAll(targetMap);
+        var devDependencies = new Map.from(pubspec.devDependencies)
+          ..addAll(targetMap);
         pubspec = pubspec.copy(devDependencies: devDependencies);
       }
 
@@ -85,51 +86,58 @@ class InstallCommand extends Command {
     }
   }
 
-  resolveGitDep(Match match) {
+  GitReference resolveGitDep(Match match) {
     if (match.group(4) != null) {
-      return {
-        'git': {'url': 'git://${match.group(2)}', 'ref': match.group(4)}
-      };
+      return new GitReference(match.group(2), match.group(4));
     } else {
-      return {'git': match.group(2)};
+      return new GitReference(match.group(2), null);
     }
   }
 
   /// Install [pkg] from [apiRoot].
-  resolvePubDep(String pkg, String apiRoot) async {
+  Future<Tuple2<String, DependencyReference>> resolvePubDep(
+      String pkg, String apiRoot) async {
     final index = pkg.indexOf('@');
+    String name;
+    VersionConstraint version;
 
     if (index > 0 && index < pkg.length - 1) {
       final split = pkg.split('@');
-
-      return {'name': split[0], 'version': split[1]};
+      name = split[0];
+      version = new VersionConstraint.parse(split[1]);
     } else {
       // Try to auto-detect version...
-      final response =
-          await _client.get(p.join(apiRoot, 'packages', pkg));
+      final response = await _client.get(p.join(apiRoot, 'packages', pkg));
 
       if (response.statusCode == HttpStatus.NOT_FOUND) {
         throw new Exception('Unable to resolve package within pub: "$pkg"');
       } else {
-        final versions = resolvePackageVersions(parse(response.body));
+        final versions = resolvePackageVersions(JSON.decode(response.body));
 
         if (versions.isEmpty) {
           throw new Exception(
               'Could not resolve any version of pub package "$pkg".');
         } else {
-          return {'name': pkg, 'version': '^${versions.first}'};
+          name = pkg;
+          version = versions.first;
         }
       }
     }
+
+    DependencyReference out;
+
+    if (apiRoot == pubApiRoot)
+      out = new HostedReference(version);
+    else
+      out = new ExternalHostedReference(name, apiRoot, version);
+
+    return new Tuple2(name, out);
   }
 
-  List<String> resolvePackageVersions(Document doc) {
-    final result = [];
-
-    for (final th in doc.querySelectorAll('#versions table tbody tr th')) {
-      result.add(th.text);
-    }
-
-    return result;
+  List<VersionConstraint> resolvePackageVersions(Map response) {
+    return response['versions'].map((Map info) {
+      String version = info['version'];
+      return new VersionConstraint.parse('^$version');
+    }).toList();
   }
 }
