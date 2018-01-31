@@ -21,7 +21,8 @@ class InitCommand extends Command {
   run() async {
     if (await pubspecFile.exists()) {
       throw new Exception(
-          '`pubspec.yaml` already exists in ${Directory.current.absolute.uri}.');
+          '`pubspec.yaml` already exists in ${Directory.current.absolute
+              .uri}.');
     }
 
     print('This utility will walk you through creating a pubspec.yaml file.');
@@ -53,10 +54,7 @@ class InitCommand extends Command {
 
     await promptField(pubspec, 'homepage', defaultValue: gitUrl);
 
-    final yaml = toYamlString(pubspec);
-
     print('About to write to ${pubspecFile.absolute.path}:');
-    print('\n$yaml\n');
 
     final result = await readInput('Is this ok? (yes) ');
 
@@ -79,7 +77,8 @@ class InitCommand extends Command {
   }
 
   promptForName() async {
-    final id = idFromString(path.basename(Directory.current.path).replaceAll('-', '_'));
+    final id = idFromString(
+        path.basename(Directory.current.path).replaceAll('-', '_'));
     final defaultName = id.snake;
     final name = await readInput('name: ($defaultName) ');
     return name.isNotEmpty ? name : defaultName;
