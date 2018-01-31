@@ -26,11 +26,3 @@ _copy(String k, v, Map out) {
 Future<Publock> loadPublock() async {
   return new Publock.fromMap(loadYaml(await lockFile.readAsString()));
 }
-
-Future<Map> loadPubspec() async {
-  final YamlMap loaded = loadYaml(await pubspecFile.readAsString());
-  final Map result = {};
-
-  loaded.forEach((k, v) => _copy(k, v, result));
-  return result;
-}

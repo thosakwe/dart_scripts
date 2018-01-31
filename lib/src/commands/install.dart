@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:pubspec/pubspec.dart';
 import 'package:yamlicious/yamlicious.dart';
 import 'get.dart';
 import 'load_publock.dart';
@@ -46,12 +46,8 @@ class InstallCommand extends Command {
       stderr.writeln(argParser.usage);
       return exit(1);
     } else {
-      final pubspec = await loadPubspec();
-      final key = argResults['dev'] ? 'dev_dependencies' : 'dependencies';
-
-      if (pubspec[key] is! Map) {
-        pubspec[key] = {};
-      }
+      var pubspec = await PubSpec.load(Directory.current);
+      var targetMap = <String, DependencyReference>{};
 
       for (final pkg in argResults.rest) {
         // Todo: Hosted packages
@@ -59,23 +55,30 @@ class InstallCommand extends Command {
         if (_gitPkg.hasMatch(pkg)) {
           final match = _gitPkg.firstMatch(pkg);
           final dep = await resolveGitDep(match);
-          pubspec[key][match.group(1)] = dep;
+          targetMap[match.group(1)] = dep;
         } else if (_pathPkg.hasMatch(pkg)) {
           final match = _pathPkg.firstMatch(pkg);
-          pubspec[key][match.group(1)] = {'path': match.group(2)};
+          targetMap[match.group(1)] = {'path': match.group(2)};
         } else {
           final dep = await resolvePubDep(pkg, pubApiRoot);
-          pubspec[key][dep['name']] = dep['version'];
+          targetMap[dep['name']] = dep['version'];
         }
       }
 
-      final yaml = toYamlString(pubspec);
       _client.close();
 
-      if (argResults['dry-run']) {
-        return print(yaml);
+      if (!argResults['dev']) {
+        var dependencies = new Map.from(pubspec.dependencies)..addAll(targetMap);
+        pubspec = pubspec.copy(dependencies: dependencies);
       } else {
-        await pubspecFile.writeAsString(yaml);
+        var devDependencies = new Map.from(pubspec.devDependencies)..addAll(targetMap);
+        pubspec = pubspec.copy(devDependencies: devDependencies);
+      }
+
+      if (argResults['dry-run']) {
+        return print(toYamlString(pubspec.toJson()));
+      } else {
+        await pubspec.save(Directory.current);
         print('Now installing dependencies...');
         return await _get.run();
       }
