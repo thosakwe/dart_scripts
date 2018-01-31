@@ -8,6 +8,7 @@ main(List<String> args) async {
       'scripts', 'Run commands upon installing Dart packages, and more.');
   runner.addCommand(new CleanCommand());
   runner.addCommand(new GetCommand());
+  runner.addCommand(new IgnoreCommand());
   runner.addCommand(new InitCommand());
   runner.addCommand(new InstallCommand());
   runner.addCommand(new LinkCommand());
