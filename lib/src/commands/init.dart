@@ -3,7 +3,7 @@ import 'package:args/command_runner.dart';
 import 'package:console/console.dart';
 import 'package:id/id.dart';
 import 'package:path/path.dart' as path;
-import 'package:yamlicious/yamlicious.dart';
+import 'package:pubspec/pubspec.dart';
 import 'get.dart';
 import 'load_publock.dart';
 
@@ -59,7 +59,8 @@ class InitCommand extends Command {
     final result = await readInput('Is this ok? (yes) ');
 
     if (result.toLowerCase().startsWith('y') || result.trim().isEmpty) {
-      await pubspecFile.writeAsString(yaml);
+      var pubspec = new PubSpec.fromJson(pubspec);
+      await pubspec.save(Directory.current);
     }
 
     await Process.run('pub', ['get']);
